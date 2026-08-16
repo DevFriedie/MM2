@@ -18,7 +18,7 @@ local COIN_NAME = "Coin_Server"
 local TARGET_COINS = 40
 
 -- Rendering deaktivieren
---RunService:Set3dRenderingEnabled(false)
+RunService:Set3dRenderingEnabled(false)
 
 -- Coin-Cache statt jedes Mal workspace:GetDescendants() komplett zu durchsuchen
 local coins = {}
