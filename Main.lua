@@ -1,6 +1,6 @@
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local VirtualUser = game:service'VirtualUser'
+local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
 
