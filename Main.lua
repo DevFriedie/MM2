@@ -20,7 +20,7 @@ local TARGET_COINS = 40
 -- Rendering deaktivieren
 RunService:Set3dRenderingEnabled(false)
 
--- Coin-Cache statt jedes Mal workspace:GetDescendants() komplett zu durchsuchen
+-- Coin-Cache
 local coins = {}
 
 local function addCoin(instance)
@@ -42,13 +42,12 @@ end
 workspace.DescendantAdded:Connect(addCoin)
 workspace.DescendantRemoving:Connect(removeCoin)
 
-
 local function getNearestCoin(root)
 	local nearestCoin = nil
 	local nearestDistance = MAX_DISTANCE
 
 	for coin in pairs(coins) do
-		if coin.Parent then
+		if coin.Parent and coin:IsDescendantOf(workspace) then
 			local offset = root.Position - coin.Position
 			local distance = offset.Magnitude
 
@@ -56,12 +55,14 @@ local function getNearestCoin(root)
 				nearestDistance = distance
 				nearestCoin = coin
 			end
+		else
+			-- Coin ist nicht mehr gültig
+			coins[coin] = nil
 		end
 	end
 
 	return nearestCoin, nearestDistance
 end
-
 
 local function getCoinCount()
 	local mainGui = playerGui:FindFirstChild("MainGUI")
@@ -82,13 +83,11 @@ local function getCoinCount()
 	local coinText = icon and icon:FindFirstChild("Coins")
 
 	if coinText and coinText:IsA("TextLabel") then
-		-- Funktioniert auch bei Text wie "40/50"
 		return tonumber(coinText.Text:match("%d+"))
 	end
 
 	return nil
 end
-
 
 local function getCharacter()
 	local character = player.Character
@@ -107,56 +106,45 @@ local function getCharacter()
 	return character, root, humanoid
 end
 
-
 while task.wait(0.1) do
 	local character, root, humanoid = getCharacter()
 
-	if not root then
-		continue
-	end
+	if player:GetAttribute("Alive") and root then
 
-	local coin, distance = getNearestCoin(root)
+		local coin, distance = getNearestCoin(root)
 
-	if not coin then
-		continue
-	end
+		if coin then
 
-	-- Coin könnte zwischen Suche und Tween verschwunden sein
-	if not coin.Parent then
-		coins[coin] = nil
-		continue
-	end
+			-- Prüfen, ob der Coin noch existiert
+			if coin.Parent and coin:IsDescendantOf(workspace) then
 
-	local duration = math.max(distance / SPEED, 0.05)
+				-- Position unmittelbar vor dem TP auslesen
+				local coinPosition = coin.Position
 
-	local tween = TweenService:Create(
-		root,
-		TweenInfo.new(
-			duration,
-			Enum.EasingStyle.Linear,
-			Enum.EasingDirection.Out
-		),
-		{
-			CFrame = CFrame.new(coin.Position)
-		}
-	)
+				-- Zweite Prüfung direkt vor dem TP
+				if coin.Parent and coin:IsDescendantOf(workspace) then
 
-	tween:Play()
-	tween.Completed:Wait()
+					root.CFrame = CFrame.new(coinPosition)
 
-	-- Prüfen, ob der Charakter während des Tweens gestorben ist
-	if not humanoid.Parent or humanoid.Health <= 0 then
-		tween:Cancel()
-		continue
-	end
+					task.wait(2)
 
-	-- Coin entfernen
-	if coin.Parent then
-		coin:Destroy()
-	end
+					-- Nur entfernen, wenn der Coin noch existiert
+					if coin.Parent and coin:IsDescendantOf(workspace) then
+						coin:Destroy()
+					end
 
-	-- Bei 40 Coins sterben
-	if getCoinCount() == TARGET_COINS then
-		humanoid.Health = 0
+					-- Bei 40 Coins sterben
+					if getCoinCount() == TARGET_COINS then
+						humanoid.Health = 0
+					end
+				else
+					coins[coin] = nil
+				end
+
+			else
+				-- Coin wurde inzwischen von jemand anderem entfernt
+				coins[coin] = nil
+			end
+		end
 	end
 end
