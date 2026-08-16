@@ -1,5 +1,6 @@
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
+local VirtualUser = game:service'VirtualUser'
 
 local player = Players.LocalPlayer
 
@@ -37,6 +38,9 @@ while task.wait(0.1) do
         local coin, distance = getNearestCoin(root)
 
         if coin then
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+            
             local duration = distance / SPEED
 
             local tween = TweenService:Create(
